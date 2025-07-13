@@ -6,6 +6,7 @@ import { getImageData } from "../src/utils";
 import Player, { type Chord } from "./player";
 import { gridsl } from "../src/image";
 import Controls from "./controls";
+import { addBasePath } from "next/dist/client/add-base-path";
 
 export default function App(): React.ReactElement {
   const [bpm, setBpm] = useState<number>(80); // 40 - 200
@@ -35,7 +36,12 @@ export default function App(): React.ReactElement {
   return (
     <div className="flex flex-col items-center gap-y-2">
       <header className="bg-slate-100 w-full p-2 flex gap-x-2">
-        <Image src="/favicon.ico" alt="" width="32" height="32" />
+        <Image
+          src={addBasePath("/favicon.ico")}
+          alt=""
+          width="32"
+          height="32"
+        />
         <h1 className="font-bold text-3xl">Synesthizer</h1>
       </header>
       <div className="flex gap-x-2 w-full px-2">

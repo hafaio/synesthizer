@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { addBasePath } from "next/dist/client/add-base-path";
+
+export type Dynamic = "pp" | "mf" | "ff";
 
 export interface Chord {
   // sequence of notes and octive like "Ab4"
@@ -7,7 +10,7 @@ export interface Chord {
   duration: number;
   // volume in [0, 1]
   volume: number;
-  dynamic: "pp" | "mf" | "ff";
+  dynamic: Dynamic;
   color: string;
 }
 
@@ -37,7 +40,7 @@ export default function Player({
 
       let num = names.size;
       for (const name of names) {
-        const audio = new Audio(`/Piano.${name}.mp3`);
+        const audio = new Audio(addBasePath(`/Piano.${name}.mp3`));
         audio.addEventListener("error", (err) => {
           // FIXME handle better
           valid = false;
