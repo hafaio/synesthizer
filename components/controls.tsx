@@ -1,7 +1,7 @@
 "use client";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import { Chord } from "./player";
+import { type Chord, type Dynamic } from "./player";
 
 export default function Controls({
   song,
@@ -23,8 +23,8 @@ export default function Controls({
   setBpm: (bpm: number) => void;
   duration: number;
   setDuration: (dur: number) => void;
-  dynamic: "pp" | "mf" | "ff";
-  setDynamic: (dyn: "pp" | "mf" | "ff") => void;
+  dynamic: Dynamic;
+  setDynamic: (dyn: Dynamic) => void;
   playing: number | null;
   setPlaying: (state: number | null) => void;
 }): React.ReactNode {
@@ -119,7 +119,7 @@ export default function Controls({
           id="dynamics"
           className="bg-gray-50 outline-violet-800 border border-gray-300 rounded block w-full p-1"
           value={dynamic}
-          onChange={(evt) => setDynamic(evt.target.value as "pp" | "mf" | "ff")}
+          onChange={(evt) => setDynamic(evt.target.value as Dynamic)}
         >
           <option value="pp">pp</option>
           <option value="mf">mf</option>
