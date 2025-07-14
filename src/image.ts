@@ -1,21 +1,21 @@
 /** This file has utilities for turning an image into notes. */
 import { Chord } from "../components/player";
 
+export type ColorChoice = "mean" | "hsl-mean" | "mode" | "comp-mode";
+export type TempoMethod = "manual" | "mean-key";
+type Color = readonly [number, number, number];
+
 // TODO alternate transparent color instead of white?
 function applyAlpha(c: number, alpha: number): number {
   return Math.round(((c - 255) * alpha) / 255) + 255;
 }
 
-function rgba2rgb(
-  rgba: readonly [number, number, number, number]
-): [number, number, number] {
+function rgba2rgb(rgba: readonly [number, number, number, number]): Color {
   const [ri, gi, bi, a] = rgba;
   return [ri, gi, bi].map((c) => applyAlpha(c, a)) as [number, number, number];
 }
 
-function rgb2hsl(
-  rgb: readonly [number, number, number]
-): [number, number, number] {
+export function rgb2hsl(rgb: Color): Color {
   const maxval = Math.max(...rgb);
   const minval = Math.min(...rgb);
   const chroma = maxval - minval;
@@ -32,11 +32,33 @@ function rgb2hsl(
   const saturation =
     lightness === 0 || lightness === 1
       ? 0
-      : chroma / (1 - Math.abs(2 * lightness - 1));
+      : chroma / 255 / (1 - Math.abs(2 * lightness - 1));
   return [hue * 60, saturation, lightness];
 }
 
-function rgb2hex(rgb: readonly [number, number, number]): string {
+export function hsl2rgb(hsl: Color): Color {
+  const [h, s, l] = hsl;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let res;
+  if (h < 60) {
+    res = [c + m, x + m, m];
+  } else if (h < 120) {
+    res = [x + m, c + m, m];
+  } else if (h < 180) {
+    res = [m, c + m, x + m];
+  } else if (h < 240) {
+    res = [m, x + m, c + m];
+  } else if (h < 300) {
+    res = [x + m, m, c + m];
+  } else {
+    res = [c + m, m, x + m];
+  }
+  return res.map((v) => Math.round(v * 255)) as unknown as Color;
+}
+
+function rgb2hex(rgb: Color): string {
   const base = rgb
     .map((n) => Math.round(n).toString(16).padStart(2, "0"))
     .join("");
@@ -58,77 +80,117 @@ const orderedNotes = [
   "Bb",
 ] as const;
 
-const colorIndex = [
-  [0, 0, 0],
-  [112, 54, 157],
-  [92, 54, 157],
-  [75, 60, 164],
-  [73, 99, 204],
-  [81, 138, 193],
-  [108, 176, 78],
-  [156, 206, 29],
-  [227, 228, 48],
-  [252, 210, 34],
-  [255, 171, 5],
-  [245, 99, 10],
-  [232, 20, 22],
-];
-
-const noteIndex: string[][] = [[], ...orderedNotes.map((n) => [`${n}4`])];
-
-// 40 - purple
-// 56 - red
-
-// FIXME delete eventually
-export function naive(img: ImageData): Chord[] {
-  const notes: Chord[] = [];
-
-  let lr = -1,
-    lg = -1,
-    lb = -1,
-    li = -1;
-  for (let i = 0; i < img.data.length; i += 4) {
-    // @ts-expect-error treating slice as array
-    const [r, g, b] = rgba2rgb(img.data.slice(i, i + 4));
-    if (r === lr && g === lg && b === lb) continue;
-    lr = r;
-    lg = g;
-    lb = b;
-
-    let best_i = 0;
-    let best_cost = Infinity;
-    for (const [i, [ri, gi, bi]] of colorIndex.entries()) {
-      const cost =
-        (r - ri) * (r - ri) + (g - gi) * (g - gi) + (b - bi) * (b - bi);
-      if (cost < best_cost) {
-        best_cost = cost;
-        best_i = i;
-      }
+function* patch(
+  img: ImageData,
+  xMin: number,
+  yMin: number,
+  xMax: number,
+  yMax: number
+): IterableIterator<Color> {
+  for (let j = yMin; j < yMax; ++j) {
+    for (let i = xMin; i < xMax; ++i) {
+      const ind = (j * img.width + i) * 4;
+      // @ts-expect-error slice to array
+      yield rgba2rgb(img.data.slice(ind, ind + 4));
     }
-
-    // current extraction is bad, so we make sure the note changes each time,
-    // specially since we can't pick duration
-    if (best_i === li) continue;
-    li = best_i;
-
-    notes.push({
-      // zero is black for rest, not sure how to handle
-      notes: noteIndex[best_i],
-      duration: 1000,
-      volume: 1,
-      dynamic: "mf",
-      color: rgb2hex([r, g, b]),
-    });
-    if (notes.length >= 10) break;
   }
-  return notes;
 }
 
-export function gridsl(
+function rgbMean(colors: Iterable<Color>): Color {
+  let c = 0,
+    rm = 0,
+    gm = 0,
+    bm = 0;
+  for (const [r, g, b] of colors) {
+    c += 1;
+    rm += (r - rm) / c;
+    gm += (g - gm) / c;
+    bm += (b - bm) / c;
+  }
+  return [rm, gm, bm];
+}
+
+function hslMean(colors: Iterable<Color>): Color {
+  let c = 0,
+    hxm = 0,
+    hym = 0,
+    sm = 0,
+    lm = 0;
+  for (const color of colors) {
+    c += 1;
+    const [h, s, l] = rgb2hsl(color);
+    const hrad = (h * Math.PI) / 180;
+    const hx = Math.cos(hrad);
+    const hy = Math.sin(hrad);
+
+    // we compute the mean hue in 2d space to avoid issues around the periodic nature
+    hxm += (hx - hxm) / c;
+    hym += (hy - hym) / c;
+    sm += (s - sm) / c;
+    lm += (l - lm) / c;
+  }
+  const hm = (Math.atan2(hym, hxm) * 180) / Math.PI;
+  return hsl2rgb([hm, sm, lm]);
+}
+
+function rgbMode(colors: Iterable<Color>): Color {
+  const counts = new Map<number, number>();
+  let max = 0;
+  for (const [r, g, b] of colors) {
+    const num = (r << 16) + (g << 8) + b;
+    const count = (counts.get(num) ?? 0) + 1;
+    max = Math.max(count, max);
+    counts.set(num, count);
+  }
+  const modes = Iterator.from(counts.entries())
+    .filter(([, count]) => count === max)
+    .map(([num]) => [num >> 16, (num >> 8) % 256, num % 256] as Color);
+  return rgbMean(modes);
+}
+
+function rgbComponentMode(colors: Iterable<Color>): Color {
+  const reds = new Map<number, number>();
+  let redMax = 0;
+  const greens = new Map<number, number>();
+  let greenMax = 0;
+  const blues = new Map<number, number>();
+  let blueMax = 0;
+  for (const [r, g, b] of colors) {
+    const redCount = (reds.get(r) ?? 0) + 1;
+    redMax = Math.max(redCount, redMax);
+    reds.set(r, redCount);
+
+    const greenCount = (greens.get(g) ?? 0) + 1;
+    greenMax = Math.max(greenCount, greenMax);
+    greens.set(g, greenCount);
+
+    const blueCount = (blues.get(b) ?? 0) + 1;
+    blueMax = Math.max(blueCount, blueMax);
+    blues.set(b, blueCount);
+  }
+  const inits = [
+    [reds, redMax],
+    [greens, greenMax],
+    [blues, blueMax],
+  ] as const;
+  return inits.map(([counts, max]) => {
+    let t = 0;
+    let mean = 0;
+    for (const [val, count] of counts) {
+      if (count === max) {
+        mean += (val - mean) / ++t;
+      }
+    }
+    return mean;
+  }) as unknown as Color;
+}
+
+export function convert(
   img: ImageData,
   bpm: number,
   duration: number,
-  dynamic: "pp" | "mf" | "ff"
+  dynamic: "pp" | "mf" | "ff",
+  mode: ColorChoice
 ): Chord[] {
   const approxBeats = (bpm * duration) / 60;
   const scale = Math.sqrt(approxBeats / (img.width * img.height));
@@ -141,40 +203,61 @@ export function gridsl(
   const chords: Chord[] = [];
   for (let j = 0; j < img.height; j += sheight) {
     for (let i = 0; i < img.width; i += swidth) {
-      // FIXME maybe clustering or something instead of mean? Or maybe even mode,
-      // maybe mode in hsl space?
-      let c = 0,
-        rm = 0,
-        gm = 0,
-        bm = 0;
       const ilim = Math.min(img.width, i + swidth);
       const jlim = Math.min(img.height, j + sheight);
-      for (let jj = j; jj < jlim; ++jj) {
-        for (let ii = i; ii < ilim; ++ii) {
-          ++c;
-          const ind = (jj * img.width + ii) * 4;
-          // @ts-expect-error slice to array
-          const [r, g, b] = rgba2rgb(img.data.slice(ind, ind + 4));
-          rm += (r - rm) / c;
-          gm += (g - gm) / c;
-          bm += (b - bm) / c;
-        }
+      const iter = patch(img, i, j, ilim, jlim);
+      let color: Color;
+      if (mode === "mean") {
+        color = rgbMean(iter);
+      } else if (mode === "hsl-mean") {
+        color = hslMean(iter);
+      } else if (mode === "mode") {
+        color = rgbMode(iter);
+      } else if (mode === "comp-mode") {
+        color = rgbComponentMode(iter);
+      } else {
+        // FIXME add hsl-mean, do to mean hue, we should mean cos(h), sin(h) amd them do atan2
+        throw new Error(`invalid color selection mode: ${mode}`);
       }
 
       // NOTE not currently using saturation / chroma
-      const [h, , l] = rgb2hsl([rm, gm, bm]);
+      const [h, , l] = rgb2hsl(color);
       const octive = Math.min(Math.floor(l * 7), 6) + 1;
       const note = orderedNotes[Math.floor(h / 30) % 12];
 
       chords.push({
         notes: [`${note}${octive}`],
         duration: 60000 / bpm,
-        color: rgb2hex([rm, gm, bm]),
+        color: rgb2hex(color),
         dynamic,
         volume: 1,
+        poly: [
+          [i, j],
+          [ilim, j],
+          [ilim, jlim],
+          [i, jlim],
+        ],
+        center: [i + (ilim - i) / 2, j + (jlim - j) / 2],
       });
     }
   }
 
   return chords;
+}
+
+export function meanKeyTempo(
+  img: ImageData,
+  low: number = 25,
+  high: number = 450
+): number {
+  const iter = patch(img, 0, 0, img.width, img.height);
+  const color = rgbMean(iter);
+  const [h, , l] = rgb2hsl(color);
+  const octive = Math.min(Math.floor(l * 7), 6);
+  const noteNum = Math.floor(h / 30) % 12;
+  const keyNum = noteNum + octive * 12; // [0, 72)
+  // place it from low to high on log-scalw
+  return Math.round(
+    Math.exp(((Math.log(high) - Math.log(low)) / 72) * keyNum + Math.log(low))
+  );
 }
