@@ -1,17 +1,22 @@
 "use client";
 import Image from "next/image";
-import { Chord } from "./player";
+import { type Chord } from "./player";
+import ImageOverlay from "./image-overlay";
 
 export default function ImageRendering({
   image,
   imgdata,
+  song,
+  playing,
 }: {
   image: string | null;
   imgdata: ImageData | null;
   song: Chord[] | null;
   playing: number | null;
 }): React.ReactNode {
-  const svg = imgdata ? <svg className="absolute w-full h-full" /> : null;
+  const svg = imgdata ? (
+    <ImageOverlay imgdata={imgdata} song={song} playing={playing} />
+  ) : null;
   const inner = image ? (
     <>
       <Image

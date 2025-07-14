@@ -10,8 +10,14 @@ export interface Chord {
   duration: number;
   // volume in [0, 1]
   volume: number;
+  // dynamic to play the note at
   dynamic: Dynamic;
+  // color for rendering
   color: string;
+  // location of this chord on the image
+  poly: [number, number][];
+  // the center of the polygon
+  center: [number, number];
 }
 
 export default function Player({
@@ -42,9 +48,9 @@ export default function Player({
       for (const name of names) {
         const audio = new Audio(addBasePath(`/Piano.${name}.mp3`));
         audio.addEventListener("error", (err) => {
-          // FIXME handle better
+          // FIXME handle better, e.g. warn people instead of just breaking
           valid = false;
-          console.error(name, err);
+          console.error(`error loading audio for ${name}`, err);
         });
         audio.addEventListener("canplaythrough", () => {
           // setKeys once all are loaded
@@ -100,21 +106,5 @@ export default function Player({
       };
     }
   }, [playing, keys, song, setPlaying]);
-
-  if (!keys || !song) return null;
-
-  // FIXME State for controlling playback? potentially by notes?
-
-  const rendNotes = song.map(({ notes, color }, i) => {
-    const text = notes.join(",") || "-";
-    const style = i === playing ? { backgroundColor: color } : { color };
-    return (
-      <div key={i} style={style}>
-        <div className="p-1 font-bold min-w-8 text-center">{text}</div>
-      </div>
-    );
-  });
-  return (
-    <div className="flex flex-wrap gap-x-2 px-2 select-none">{rendNotes}</div>
-  );
+  return null;
 }
