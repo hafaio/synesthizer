@@ -28,7 +28,7 @@ export default function ImageRendering({
     const fontSize = avgSize / 4;
     points = song.map((chord, i) => {
       const points = chord.poly.map(([x, y]) => `${x},${y}`).join(" ");
-      const name = chord.notes.join(",");
+      const name = chord.notes.join(",").replaceAll("b", "♭");
       const active = i === playing;
       const [cx, cy] = chord.center;
       return (
