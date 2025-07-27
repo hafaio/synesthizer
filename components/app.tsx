@@ -21,30 +21,39 @@ export default function App(): React.ReactElement {
   const [colorChoice, setColorChoice] = useState<ColorChoice>("mean");
   const [image, setImage] = useState<string | null>(null);
   const [imgdata, setImgdata] = useState<ImageData | null>(null);
-  // TODO we maybe want some aspect of the original color to be preset
   const [song, setSong] = useState<Chord[] | null>(null);
   const [playing, setPlaying] = useState<number | null>(null);
 
+  // if we upload a new image, parse it into data
   useEffect(() => {
+    setPlaying(null);
+    setImgdata(null);
+    if (image) {
+      getImageData(image)
+        .then(setImgdata)
+        // FIXME better error handling
+        .catch((err) => console.error(err));
+    }
+  }, [image]);
+
+  // if tempo method is set, look at the image to extract tempo
+  useEffect(() => {
+    setPlaying(null);
     if (imgdata && tempoMethod === "mean-key") {
+      setSong(null); // clear song while we extract new tempo
       // TODO make bpm undefined while calculating
       setBpm(meanKeyTempo(imgdata));
     }
   }, [imgdata, tempoMethod]);
 
+  // based on configs, convert image to song
   useEffect(() => {
     setPlaying(null);
-    setImgdata(null);
-    if (image) {
-      (async () => {
-        const data = await getImageData(image);
-        setImgdata(data);
-        const song = convert(data, bpm, duration, dynamic, colorChoice);
-        setSong(song);
-        // TODO better error handling
-      })().catch((err) => console.error(err));
+    if (imgdata) {
+      const song = convert(imgdata, bpm, duration, dynamic, colorChoice);
+      setSong(song);
     }
-  }, [image, bpm, duration, dynamic, colorChoice]);
+  }, [imgdata, bpm, duration, dynamic, colorChoice]);
 
   return (
     <div className="flex flex-col items-center gap-y-2 h-full">
