@@ -50,6 +50,7 @@ export default function ImageRendering({
               }}
             />
             <text
+              // TODO make sure this font renders flats
               x={cx}
               y={cy}
               textAnchor="middle"

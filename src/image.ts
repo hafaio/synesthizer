@@ -1,7 +1,8 @@
 /** This file has utilities for turning an image into notes. */
 import { Chord } from "../components/player";
+import { xmeans } from "./kmeans";
 
-export type ColorChoice = "mean" | "hsl-mean" | "mode" | "comp-mode";
+export type ColorChoice = "mean" | "hsl-mean" | "mode" | "comp-mode" | "xmeans";
 export type TempoMethod = "manual" | "mean-key";
 type Color = readonly [number, number, number];
 
@@ -185,6 +186,34 @@ function rgbComponentMode(colors: Iterable<Color>): Color {
   }) as unknown as Color;
 }
 
+function xmeansMode(colors: Iterable<Color>, num: number): [Color, number][] {
+  const data = new Float64Array(num * 3);
+  let i = 0;
+  for (const [r, g, b] of colors) {
+    data[i++] = r;
+    data[i++] = g;
+    data[i++] = b;
+  }
+  const [clusters, assigns] = xmeans(data, 3, {
+    initClusters: 1,
+  });
+  const numClusters = clusters.length / 3;
+  const counts = new Uint32Array(numClusters);
+  for (const ind of assigns) {
+    counts[ind] += 1;
+  }
+  const res: [Color, number][] = [];
+  for (let i = 0; i < numClusters; ++i) {
+    res.push([
+      [...clusters.subarray(i * 3, i * 3 + 3)] as unknown as Color,
+      counts[i],
+    ]);
+  }
+  res.sort(([, a], [, b]) => b - a);
+  return res;
+}
+
+// TODO we may want to put this in a web worker, but right now it's "okay"
 export function convert(
   img: ImageData,
   bpm: number,
@@ -206,6 +235,7 @@ export function convert(
       const ilim = Math.min(img.width, i + swidth);
       const jlim = Math.min(img.height, j + sheight);
       const iter = patch(img, i, j, ilim, jlim);
+      const num = (ilim - i) * (jlim - j);
       let color: Color;
       if (mode === "mean") {
         color = rgbMean(iter);
@@ -215,6 +245,10 @@ export function convert(
         color = rgbMode(iter);
       } else if (mode === "comp-mode") {
         color = rgbComponentMode(iter);
+      } else if (mode === "xmeans") {
+        // FIXME we probably want this to run in constant time, so maybe we downsample first
+        const allColors = xmeansMode(iter, num);
+        [[color]] = allColors;
       } else {
         // FIXME add hsl-mean, do to mean hue, we should mean cos(h), sin(h) amd them do atan2
         throw new Error(`invalid color selection mode: ${mode}`);

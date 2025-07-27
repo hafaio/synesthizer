@@ -163,6 +163,7 @@ export default function Controls({
           <option value="hsl-mean">Mean (hsl)</option>
           <option value="mode">Mode</option>
           <option value="comp-mode">Component Mode</option>
+          <option value="xmeans">X-Means</option>
         </select>
       </div>
       <div className="grow" />
