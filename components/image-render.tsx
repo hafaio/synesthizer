@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { type Chord } from "./player";
+import type { Chord } from "../src/worker-interface";
 import ImageOverlay from "./image-overlay";
 
 export default function ImageRendering({
@@ -18,7 +18,7 @@ export default function ImageRendering({
     <ImageOverlay imgdata={imgdata} song={song} playing={playing} />
   ) : null;
   const inner = image ? (
-    <>
+    <div className="h-screen md:h-full">
       <Image
         src={image}
         alt="uploaded synth image"
@@ -26,7 +26,7 @@ export default function ImageRendering({
         className="h-full object-contain"
       />
       {svg}
-    </>
+    </div>
   ) : null;
   return <div className="grow self-stretch relative">{inner}</div>;
 }
