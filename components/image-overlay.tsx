@@ -1,4 +1,5 @@
-import { type Chord } from "./player";
+import { hex2rgb, rgb2hsl } from "../src/colors";
+import type { Chord } from "../src/worker-interface";
 
 function polyArea(points: [number, number][]): number {
   let area = 0;
@@ -28,11 +29,16 @@ export default function ImageRendering({
     const fontSize = avgSize / 4;
     points = song.map((chord, i) => {
       const points = chord.poly.map(([x, y]) => `${x},${y}`).join(" ");
-      const name = chord.notes.join(",").replaceAll("b", "♭");
+      // TODO better name with better undserstanding of chords
+      const [first] = chord.notes;
+      const rend = first.replaceAll("b", "♭").replaceAll("#", "♯");
+      const name = chord.notes.length > 1 ? `${rend}♪` : rend;
+      const [, , lightness] = rgb2hsl(hex2rgb(chord.color));
+      const noteColor = lightness < 0.5 ? "white" : "black";
       const active = i === playing;
       const [cx, cy] = chord.center;
       return (
-        <g key={i}>
+        <g key={chord.id}>
           <polygon
             points={points}
             className="transition-all stroke-black/10 stroke-1 fill-none"
@@ -56,7 +62,7 @@ export default function ImageRendering({
               textAnchor="middle"
               dominantBaseline="middle"
               fontSize={fontSize}
-              fill="black"
+              fill={noteColor}
             >
               {name}
             </text>
@@ -67,6 +73,8 @@ export default function ImageRendering({
   }
   return (
     <svg
+      role="img"
+      aria-label="rendered image"
       viewBox={`0 0 ${imgdata.width} ${imgdata.height}`}
       className="absolute w-full h-full"
     >
