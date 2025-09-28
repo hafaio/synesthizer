@@ -1,24 +1,13 @@
-import { useEffect, useState } from "react";
+"use client";
+
 import { addBasePath } from "next/dist/client/add-base-path";
+import { connection } from "next/server";
+import { useEffect, useState } from "react";
+import { loaded, Sampler } from "tone";
+import { orderedNotes } from "../src/notes";
+import type { Chord } from "../src/worker-interface";
 
 export type Dynamic = "pp" | "mf" | "ff";
-
-export interface Chord {
-  // sequence of notes and octive like "Ab4"
-  notes: string[];
-  // duration in ms
-  duration: number;
-  // volume in [0, 1]
-  volume: number;
-  // dynamic to play the note at
-  dynamic: Dynamic;
-  // color for rendering
-  color: string;
-  // location of this chord on the image
-  poly: [number, number][];
-  // the center of the polygon
-  center: [number, number];
-}
 
 export default function Player({
   song,
@@ -29,65 +18,34 @@ export default function Player({
   playing: number | null;
   setPlaying: (state: number | null) => void;
 }): React.ReactNode {
-  const [keys, setKeys] = useState<Map<string, HTMLAudioElement> | null>(null);
-
+  const [sampler, setSampler] = useState<Sampler | null>(null);
   useEffect(() => {
-    if (song === null) {
-      setKeys(null);
-    } else {
-      let valid = true;
-      const keys = new Map<string, HTMLAudioElement>();
-      const names = new Set<string>();
-      for (const { notes, dynamic } of song) {
-        for (const note of notes) {
-          names.add(`${dynamic}.${note}`);
+    // this prevents this from happening during pre-render since the prerender can't render audio
+    connection()
+      .then(loaded)
+      .then(() => {
+        const urls: Record<string, string> = {};
+        for (const note of orderedNotes) {
+          for (let octave = 1; octave < 8; ++octave) {
+            urls[`${note}${octave}`] = `${note}${octave}.mp3`;
+          }
         }
-      }
-
-      let num = names.size;
-      for (const name of names) {
-        const audio = new Audio(addBasePath(`/Piano.${name}.mp3`));
-        audio.addEventListener("error", (err) => {
-          // FIXME handle better, e.g. warn people instead of just breaking
-          valid = false;
-          console.error(`error loading audio for ${name}`, err);
-        });
-        audio.addEventListener("canplaythrough", () => {
-          // setKeys once all are loaded
-          if (!--num && valid) setKeys(keys);
-        });
-        keys.set(name, audio);
-      }
-      // if song changes, don't set keys
-      return () => {
-        valid = false;
-      };
-    }
-  }, [song]);
-
-  // FIXME maybe instead of this approach, we can generate a wav file and track
-  // where we are? To do that  we may need sample piano notes of every length,
-  // so maybe this is "easier"
+        setSampler(
+          new Sampler({
+            urls,
+            baseUrl: addBasePath("/Piano.mf."),
+          }).toDestination(),
+        );
+      });
+  }, []);
 
   useEffect(() => {
-    if (playing !== null && keys && song) {
+    if (playing !== null && song && sampler) {
       const chord = song[playing];
-      const notes = song[playing].notes.map(
-        (note) => keys.get(`${chord.dynamic}.${note}`)!
-      );
-
-      // if we have a chord, play
-      for (const note of notes) {
-        note.currentTime = 0;
-        note.volume = chord.volume;
-        note.play();
-      }
-
-      const final = playing + 1 === song.length;
       // NOTE don't stop final note early
-      const duration = final
-        ? Math.max(chord.duration, ...notes.map((note) => note.duration * 1000))
-        : chord.duration;
+      const final = playing + 1 === song.length;
+      const duration = final ? chord.duration * 10 : chord.duration;
+      sampler.triggerAttack(chord.notes);
       const num = setTimeout(() => {
         if (final) {
           setPlaying(null);
@@ -98,13 +56,10 @@ export default function Player({
 
       // cleanup if playblack is interrupted
       return () => {
-        // FIXME should we keep the notes playing always?
-        for (const note of notes) {
-          note.pause();
-        }
+        sampler.triggerRelease(chord.notes);
         clearTimeout(num);
       };
     }
-  }, [playing, keys, song, setPlaying]);
+  }, [playing, song, setPlaying, sampler]);
   return null;
 }

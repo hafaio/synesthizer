@@ -35,13 +35,13 @@ function getRow(data: Float64Array, ind: number, dim: number): Float64Array {
 }
 
 function dist(left: Float64Array, right: Float64Array): number {
-  return left.reduce((s, v, i) => s + Math.pow(v - right[i], 2), 0);
+  return left.reduce((s, v, i) => s + (v - right[i]) ** 2, 0);
 }
 
 function kmeansPlusPlus(
   data: Float64Array,
   dim: number,
-  nclusters: number
+  nclusters: number,
 ): Float64Array {
   const ndata = data.length / dim;
   const clusters = new Float64Array(nclusters * dim);
@@ -96,7 +96,7 @@ function kmeansNative(
   data: Float64Array,
   clusters: Float64Array,
   dim: number,
-  maxIterations: number
+  maxIterations: number,
 ): Uint32Array {
   const ndata = data.length / dim;
   const nclusters = clusters.length / dim;
@@ -159,7 +159,7 @@ function variance(
   clusters: Float64Array,
   assigns: Uint32Array,
   dim: number,
-  dof: number = 1
+  dof: number = 0,
 ): number {
   let vari = 0;
   let count = -dof;
@@ -168,7 +168,7 @@ function variance(
     const centroid = getRow(clusters, a, dim);
     for (let j = 0; j < dim; ++j) {
       count++;
-      const sqDiff = Math.pow(row[j] - centroid[j], 2);
+      const sqDiff = (row[j] - centroid[j]) ** 2;
       if (count < 1) {
         vari += sqDiff;
       } else {
@@ -183,7 +183,8 @@ function bic(
   data: Float64Array,
   clusters: Float64Array,
   assigns: Uint32Array,
-  dim: number
+  dim: number,
+  minVariance: number,
 ): [number, number] {
   const ndata = data.length / dim;
   const nclusters = clusters.length / dim;
@@ -196,7 +197,8 @@ function bic(
   // ignore clusters with no data
   const entropy = counts.reduce((s, v) => (v > 0 ? s + v * Math.log(v) : s), 0);
   const vari = variance(data, clusters, assigns, dim);
-  const likelihood = entropy - ((ndata * dim) / 2) * Math.log(vari);
+  const bicVariance = Math.max(vari, minVariance);
+  const likelihood = entropy - (data.length / 2) * Math.log(bicVariance);
 
   // compute BIC
   const k = nclusters * (dim + 1); // number of parameters
@@ -211,13 +213,15 @@ export function xmeans(
     maxKmeansIters = 1000,
     initClusters = 1,
     maxClusters,
-    splitStyle = "xmeans",
+    minVariance = 0,
+    splitStyle = "kmeans++",
   }: {
     maxKmeansIters?: number;
     initClusters?: number;
     maxClusters?: number;
+    minVariance?: number;
     splitStyle?: "xmeans" | "kmeans++" | "max";
-  } = {}
+  } = {},
 ): [Float64Array, Uint32Array] {
   const stopping = maxClusters === undefined ? undefined : maxClusters * dim;
 
@@ -227,7 +231,7 @@ export function xmeans(
   let assigns = kmeansNative(data, clusters, dim, maxKmeansIters);
 
   // set best clusters and bic
-  let bestBic = bic(data, clusters, assigns, dim);
+  let [bestBic] = bic(data, clusters, assigns, dim, minVariance);
   let bestClusters = clusters;
   let bestAssigns = assigns;
   let didSplit = true;
@@ -251,7 +255,13 @@ export function xmeans(
         }
       }
 
-      const [bicKeep, vari] = bic(sub, center, new Uint32Array(nsub), dim);
+      const [bicKeep, vari] = bic(
+        sub,
+        center,
+        new Uint32Array(nsub),
+        dim,
+        minVariance,
+      );
 
       // now split
       let splits: Float64Array;
@@ -278,7 +288,7 @@ export function xmeans(
       }
       const splitAssigns = kmeansNative(sub, splits, dim, maxKmeansIters);
 
-      const [bicSplit] = bic(sub, splits, splitAssigns, dim);
+      const [bicSplit] = bic(sub, splits, splitAssigns, dim, minVariance);
       if (bicSplit > bicKeep) {
         // keep the split
         getRow(newClusters, nc++, dim).set(getRow(splits, 0, dim));
@@ -311,45 +321,7 @@ export function xmeans(
     assigns = kmeansNative(data, clusters, dim, maxKmeansIters);
 
     // check the bic of this vs the best found and only update best cluster if found a higher bic
-    const bicNext = bic(data, clusters, assigns, dim);
-    if (bicNext > bestBic) {
-      bestBic = bicNext;
-      bestClusters = clusters;
-      bestAssigns = assigns;
-    }
-  }
-
-  return [bestClusters, bestAssigns];
-}
-
-/** instead of doing fancy xmeans, just try everything between min and max */
-export function bmeans(
-  data: Float64Array,
-  dim: number,
-  minClusters: number,
-  maxClusters: number,
-  {
-    maxKmeansIters = 1000,
-  }: {
-    maxKmeansIters?: number;
-  } = {}
-): [Float64Array, Uint32Array] {
-  // initialize first clusters
-  const clusters = kmeansPlusPlus(data, dim, minClusters);
-  const assigns = kmeansNative(data, clusters, dim, maxKmeansIters);
-
-  // set best clusters and bic
-  let bestBic = bic(data, clusters, assigns, dim);
-  let bestClusters = clusters;
-  let bestAssigns = assigns;
-
-  // bmeans loop
-  for (let c = minClusters + 1; c < maxClusters; ++c) {
-    const clusters = kmeansPlusPlus(data, dim, c);
-    const assigns = kmeansNative(data, clusters, dim, maxKmeansIters);
-
-    // check the bic of this vs the best found and only update best cluster if found a higher bic
-    const bicNext = bic(data, clusters, assigns, dim);
+    const [bicNext] = bic(data, clusters, assigns, dim, minVariance);
     if (bicNext > bestBic) {
       bestBic = bicNext;
       bestClusters = clusters;

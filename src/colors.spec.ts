@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { hsl2rgb, rgb2hsl } from "./image";
+import { hsl2rgb, rgb2hsl } from "./colors";
 
 test("hsl2rgb transitivity", () => {
   const white = [255, 255, 255] as const;
