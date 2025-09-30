@@ -49,7 +49,8 @@ addEventListener("message", (event: MessageEvent<Message>) => {
         entry.count += count;
         entry.color.push(rgb2hslc(color));
       }
-      const norm = counts.values().reduce((t, { count }) => t + count, 0);
+      const vals = Iterator.from(counts.values());
+      const norm = vals.reduce((t, { count }) => t + count, 0);
       const bestColor = new MaxBy<string>();
       const notes: [string, number][] = [];
       for (const [note, { count, color }] of counts) {
