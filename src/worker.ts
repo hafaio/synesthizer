@@ -6,6 +6,7 @@ import { refine } from "./refine";
 import { regions } from "./regions";
 import { ArrayMean, MaxBy } from "./utils";
 import type { Chord, Message, Result } from "./worker-interface";
+import "core-js/actual/iterator";
 
 addEventListener("message", (event: MessageEvent<Message>) => {
   try {
