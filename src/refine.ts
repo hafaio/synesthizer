@@ -1,5 +1,7 @@
 /** module for refining a "song" of weighted notes into what we want to play */
 
+import "core-js/actual/iterator";
+
 export type RefineMethod = "trim";
 
 /** trim notes that are too infrequent or when there's too many */
