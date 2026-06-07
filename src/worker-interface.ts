@@ -1,5 +1,6 @@
 import type { ColorChoice } from "./extraction";
 import type { NoteConversion } from "./notes";
+import type { OrderMethod } from "./order";
 import type { RefineMethod } from "./refine";
 import type { RegionMethod } from "./regions";
 
@@ -22,6 +23,7 @@ export interface Message {
   bpm: number;
   duration: number;
   region: RegionMethod;
+  order: OrderMethod;
   colorChoice: ColorChoice;
   minStd: number;
   noteMethod: NoteConversion;

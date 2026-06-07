@@ -43,6 +43,44 @@ export class ArrayMean<V extends readonly number[] = readonly number[]> {
   }
 }
 
+export class ArrayVariance<V extends readonly number[] = readonly number[]> {
+  #count = 0;
+  #mean: number[] | null = null;
+  #sumSq: number[] | null = null; // running sum of squared deviations per dim
+
+  push(arr: Readonly<V>): this {
+    this.#count++;
+    if (this.#mean === null || this.#sumSq === null) {
+      this.#mean = [...arr];
+      this.#sumSq = arr.map(() => 0);
+    } else if (this.#mean.length !== arr.length) {
+      throw new Error(
+        `mismatched lengths for variance: ${this.#mean.length} vs ${arr.length}`,
+      );
+    } else {
+      for (let i = 0; i < arr.length; ++i) {
+        const delta = arr[i] - this.#mean[i];
+        this.#mean[i] += delta / this.#count;
+        this.#sumSq[i] += delta * (arr[i] - this.#mean[i]);
+      }
+    }
+    return this;
+  }
+
+  /** population variance summed across every component, or null if empty */
+  get total(): number | null {
+    if (this.#sumSq === null || this.#count === 0) {
+      return null;
+    } else {
+      let total = 0;
+      for (const sumSq of this.#sumSq) {
+        total += sumSq / this.#count;
+      }
+      return total;
+    }
+  }
+}
+
 export class MaxBy<V> {
   #best: { weight: number; val: V } | null = null;
 
