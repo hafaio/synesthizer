@@ -233,19 +233,17 @@ export default function App(): React.ReactElement {
           </div>
         ) : null}
       </div>
-      {song ? (
+      <div
+        className={`h-1 w-full ${song ? "bg-gray-200 dark:bg-gray-800" : ""}`}
+        role="progressbar"
+        aria-label="playback progress"
+        aria-valuenow={Math.round(progress)}
+      >
         <div
-          className="h-1 w-full bg-gray-200 dark:bg-gray-800"
-          role="progressbar"
-          aria-label="playback progress"
-          aria-valuenow={Math.round(progress)}
-        >
-          <div
-            className="h-full bg-gradient-to-r from-rose-500 via-emerald-500 to-indigo-500 transition-[width] duration-200"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      ) : null}
+          className="h-full bg-gradient-to-r from-rose-500 via-emerald-500 to-indigo-500 transition-[width] duration-200"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
       <Player song={song} playing={playing} setPlaying={setPlaying} />
     </div>
   );
