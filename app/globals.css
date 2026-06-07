@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-html {
-  /* Let native form controls and scrollbars follow the active scheme. */
-  color-scheme: light dark;
-}
+/* drive `dark:` off a `.dark` class so the toggle can override the OS;
+   next-themes sets the class (and color-scheme) on <html> */
+@custom-variant dark (&:where(.dark, .dark *));

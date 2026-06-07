@@ -15,6 +15,7 @@ import type { Chord } from "../src/worker-interface";
 import Controls from "./controls";
 import ImageRender from "./image-render";
 import Player from "./player";
+import ThemeToggle from "./theme-toggle";
 
 export default function App(): React.ReactElement {
   const [tempoMethod, setTempoMethod] = useState<TempoMethod>("mean-key");
@@ -179,6 +180,9 @@ export default function App(): React.ReactElement {
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Turn images into piano compositions
             </p>
+          </div>
+          <div className="ml-auto">
+            <ThemeToggle />
           </div>
         </div>
       </header>
