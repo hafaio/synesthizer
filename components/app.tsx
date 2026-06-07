@@ -1,7 +1,8 @@
 "use client";
 import { addBasePath } from "next/dist/client/add-base-path";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useDropzone } from "react-dropzone";
 import type { ColorChoice } from "../src/extraction";
 import { convert } from "../src/image";
 import type { NoteConversion } from "../src/notes";
@@ -32,6 +33,22 @@ export default function App(): React.ReactElement {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [extracting, setExtracting] = useState(false);
+
+  // a dropped/selected file becomes the new working image, releasing the old url
+  const onDrop = useCallback(([file]: File[]) => {
+    if (!file) return;
+    setImage((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+  }, []);
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+    onDrop,
+    accept: { "image/*": [] },
+    multiple: false,
+    noClick: true,
+    noKeyboard: true,
+  });
 
   // if we upload a new image, parse it into data
   useEffect(() => {
@@ -135,22 +152,41 @@ export default function App(): React.ReactElement {
     minStd,
   ]);
 
+  const progress =
+    song && song.length > 0 && playing !== null
+      ? ((playing + 1) / song.length) * 100
+      : 0;
+
   return (
-    <div className="flex flex-col items-center gap-y-2 md:h-full">
-      <header className="bg-slate-100 w-full p-2 flex gap-x-2">
-        <Image
-          src={addBasePath("/favicon.ico")}
-          alt=""
-          width="32"
-          height="32"
-        />
-        <h1 className="font-bold text-3xl">Synesthizer</h1>
+    <div className="flex flex-col items-center md:h-full">
+      <header className="sticky top-0 z-20 w-full border-b border-gray-200 bg-white/80 backdrop-blur dark:border-gray-800 dark:bg-gray-950/80">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <Image
+            src={addBasePath("/favicon.ico")}
+            alt=""
+            width={32}
+            height={32}
+            className="rounded"
+          />
+          <div className="leading-tight">
+            <h1 className="bg-gradient-to-r from-rose-500 via-emerald-500 to-indigo-500 bg-clip-text text-2xl font-bold text-transparent">
+              Synesthizer
+            </h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Turn images into piano compositions
+            </p>
+          </div>
+        </div>
       </header>
-      <div className="flex flex-col md:flex-row gap-x-2 gap-y-2 w-full px-2 pb-2 grow">
+      <div
+        {...getRootProps()}
+        className="relative flex w-full grow flex-col gap-2 p-2 md:flex-row"
+      >
+        <input {...getInputProps()} />
         <Controls
           song={song}
-          image={image}
-          setImage={setImage}
+          hasImage={image !== null}
+          onUpload={open}
           tempoMethod={tempoMethod}
           setTempoMethod={setTempoMethod}
           bpm={bpm}
@@ -181,8 +217,29 @@ export default function App(): React.ReactElement {
           song={song}
           playing={playing}
           imgdata={imgdata}
+          onUpload={open}
         />
+        {isDragActive ? (
+          <div className="pointer-events-none absolute inset-2 z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-indigo-500 bg-indigo-500/10 backdrop-blur-sm">
+            <p className="text-lg font-bold text-indigo-700 dark:text-indigo-300">
+              Drop image to upload
+            </p>
+          </div>
+        ) : null}
       </div>
+      {song ? (
+        <div
+          className="h-1 w-full bg-gray-200 dark:bg-gray-800"
+          role="progressbar"
+          aria-label="playback progress"
+          aria-valuenow={Math.round(progress)}
+        >
+          <div
+            className="h-full bg-gradient-to-r from-rose-500 via-emerald-500 to-indigo-500 transition-[width] duration-200"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      ) : null}
       <Player song={song} playing={playing} setPlaying={setPlaying} />
     </div>
   );

@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+html {
+  /* Let native form controls and scrollbars follow the active scheme. */
+  color-scheme: light dark;
+}

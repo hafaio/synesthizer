@@ -20,7 +20,7 @@ export default function NumericSelector({
   const id = useId();
   return (
     <div>
-      <label className="block font-bold" htmlFor={id}>
+      <label className="block text-sm font-semibold" htmlFor={id}>
         {title}
       </label>
       <input
@@ -39,7 +39,7 @@ export default function NumericSelector({
             set(null);
           }
         }}
-        className="p-1 outline-violet-800 bg-gray-50 border border-gray-300 rounded w-full block disabled:text-gray-400"
+        className="mt-0.5 block w-full rounded border border-gray-300 bg-gray-50 p-1.5 outline-violet-600 focus:outline-2 disabled:text-gray-400 dark:border-gray-700 dark:bg-gray-800 dark:disabled:text-gray-500"
       />
     </div>
   );
