@@ -1,6 +1,7 @@
 /** extract ordered regions from an image to turn into notes */
 
-import type { RGB } from "./colors";
+import { type HSLC, type RGB, rgb2hslc } from "./colors";
+import { ArrayVariance } from "./utils";
 
 export type RegionMethod = "grid";
 
@@ -9,6 +10,8 @@ export interface Region {
   num: number;
   poly: [number, number][];
   center: [number, number];
+  // total spread of the region's colors in the HSL cone; 0 when empty
+  variance: number;
 }
 
 // TODO custom ordering
@@ -41,6 +44,14 @@ function* patch(
   }
 }
 
+function colorVariance(colors: Iterable<RGB>): number {
+  const spread = new ArrayVariance<HSLC>();
+  for (const color of colors) {
+    spread.push(rgb2hslc(color));
+  }
+  return spread.total ?? 0;
+}
+
 /** a single region */
 export function* single(img: ImageData): Generator<Region> {
   const colors = patch(img, 0, 0, img.width, img.height);
@@ -52,7 +63,8 @@ export function* single(img: ImageData): Generator<Region> {
     [0, img.height],
   ];
   const center: [number, number] = [img.width / 2, img.height / 2];
-  yield { colors, num, poly, center };
+  const variance = colorVariance(patch(img, 0, 0, img.width, img.height));
+  yield { colors, num, poly, center, variance };
 }
 
 /** an ordered set of apprximately square patches */
@@ -85,8 +97,9 @@ export function* orderedGrid(img: ImageData, notes: number): Generator<Region> {
         imin + (imax - imin) / 2,
         jmin + (jmax - jmin) / 2,
       ];
+      const variance = colorVariance(patch(img, imin, jmin, imax, jmax));
 
-      yield { colors, num, poly, center };
+      yield { colors, num, poly, center, variance };
     }
   }
 }

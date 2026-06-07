@@ -6,6 +6,7 @@ import { useDropzone } from "react-dropzone";
 import type { ColorChoice } from "../src/extraction";
 import { convert } from "../src/image";
 import type { NoteConversion } from "../src/notes";
+import type { OrderMethod } from "../src/order";
 import type { RefineMethod } from "../src/refine";
 import type { RegionMethod } from "../src/regions";
 import { meanKeyTempo, type TempoMethod } from "../src/tempo";
@@ -20,6 +21,7 @@ export default function App(): React.ReactElement {
   const [bpm, setBpm] = useState<number | null>(80);
   const [duration, setDuration] = useState<number | null>(30); // how long should this range be?
   const [region, setRegion] = useState<RegionMethod>("grid");
+  const [orderMethod, setOrderMethod] = useState<OrderMethod>("word");
   const [colorChoice, setColorChoice] = useState<ColorChoice>("proportional");
   const [minStd, setMinStd] = useState<number | null>(0.04);
   const [noteMethod, setNoteMethod] = useState<NoteConversion>("hslc");
@@ -109,6 +111,7 @@ export default function App(): React.ReactElement {
             bpm,
             duration,
             region,
+            order: orderMethod,
             colorChoice,
             minStd,
             noteMethod,
@@ -142,6 +145,7 @@ export default function App(): React.ReactElement {
     bpm,
     duration,
     region,
+    orderMethod,
     colorChoice,
     refineMethod,
     minWeight,
@@ -195,6 +199,8 @@ export default function App(): React.ReactElement {
           setDuration={setDuration}
           region={region}
           setRegion={setRegion}
+          orderMethod={orderMethod}
+          setOrderMethod={setOrderMethod}
           colorChoice={colorChoice}
           setColorChoice={setColorChoice}
           minStd={minStd}

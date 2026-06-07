@@ -2,6 +2,7 @@ import { v4 as uuid } from "uuid";
 import { type HSLC, hslc2rgb, rgb2hex, rgb2hslc } from "./colors";
 import { extract } from "./extraction";
 import { color2note } from "./notes";
+import { order } from "./order";
 import { refine } from "./refine";
 import { regions } from "./regions";
 import { ArrayMean, MaxBy } from "./utils";
@@ -18,6 +19,7 @@ addEventListener("message", (event: MessageEvent<Message>) => {
       minStd,
       noteMethod,
       region,
+      order: orderMethod,
       refineMethod,
       minWeight,
       maxNotes,
@@ -27,12 +29,14 @@ addEventListener("message", (event: MessageEvent<Message>) => {
 
     const chords: Chord[] = [];
     const weightedNotes: [string, number][][] = [];
-    for (const { colors, num, poly, center } of regions(
-      img,
-      region,
-      approxBeats,
-    )) {
-      const weighted = extract(colors, colorChoice, { num, maxNotes, minStd });
+    // playback order is independent of how regions were carved
+    const ordered = order([...regions(img, region, approxBeats)], orderMethod);
+    for (const { colors, num, poly, center } of ordered) {
+      const weighted = extract(colors, colorChoice, {
+        num,
+        maxNotes,
+        minStd,
+      });
 
       // NOTE not currently using saturation / chroma
       const counts = new Map<

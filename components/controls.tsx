@@ -1,6 +1,7 @@
 "use client";
 import type { ColorChoice } from "../src/extraction";
 import type { NoteConversion } from "../src/notes";
+import type { OrderMethod } from "../src/order";
 import type { RefineMethod } from "../src/refine";
 import type { RegionMethod } from "../src/regions";
 import type { TempoMethod } from "../src/tempo";
@@ -20,6 +21,8 @@ export default function Controls({
   setDuration,
   region,
   setRegion,
+  orderMethod,
+  setOrderMethod,
   colorChoice,
   setColorChoice,
   minStd,
@@ -48,6 +51,8 @@ export default function Controls({
   setDuration: (dur: number | null) => void;
   region: RegionMethod;
   setRegion: (region: RegionMethod) => void;
+  orderMethod: OrderMethod;
+  setOrderMethod: (method: OrderMethod) => void;
   colorChoice: ColorChoice;
   setColorChoice: (choice: ColorChoice) => void;
   minStd: number | null;
@@ -172,6 +177,15 @@ export default function Controls({
         value={region}
         set={setRegion}
         values={[["grid", "Grid"]]}
+      />
+      <TypedSelector
+        title="Order Selection"
+        value={orderMethod}
+        set={setOrderMethod}
+        values={[
+          ["word", "Word Order"],
+          ["focal-spiral", "Focal Spiral"],
+        ]}
       />
       <TypedSelector
         title="Note Conversion"
