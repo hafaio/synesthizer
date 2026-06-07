@@ -1,5 +1,5 @@
 "use client";
-import { CloudArrowUpIcon } from "@heroicons/react/24/outline";
+import { CloudUpload } from "lucide-react";
 import Image from "next/image";
 import type { Chord } from "../src/worker-interface";
 import ImageOverlay from "./image-overlay";
@@ -36,7 +36,7 @@ export default function ImageRendering({
       onClick={onUpload}
       className="flex h-full min-h-[60vh] w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-gray-300 p-6 text-gray-500 transition-colors hover:border-indigo-400 hover:text-indigo-500 dark:border-gray-700 dark:text-gray-400 dark:hover:border-indigo-500"
     >
-      <CloudArrowUpIcon aria-hidden="true" className="h-12 w-12 shrink-0" />
+      <CloudUpload aria-hidden="true" className="h-12 w-12 shrink-0" />
       <span className="max-w-full text-center text-lg font-semibold text-balance">
         Drop an image here, or click to upload
       </span>
