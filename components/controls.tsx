@@ -1,6 +1,4 @@
 "use client";
-import { useCallback } from "react";
-import { useDropzone } from "react-dropzone";
 import type { ColorChoice } from "../src/extraction";
 import type { NoteConversion } from "../src/notes";
 import type { RefineMethod } from "../src/refine";
@@ -12,8 +10,8 @@ import TypedSelector from "./typed-selector";
 
 export default function Controls({
   song,
-  image,
-  setImage,
+  hasImage,
+  onUpload,
   tempoMethod,
   setTempoMethod,
   bpm,
@@ -40,8 +38,8 @@ export default function Controls({
   error,
 }: {
   song: Chord[] | null;
-  image: string | null;
-  setImage: (img: string) => void;
+  hasImage: boolean;
+  onUpload: () => void;
   tempoMethod: TempoMethod;
   setTempoMethod: (method: TempoMethod) => void;
   bpm: number | null;
@@ -67,39 +65,20 @@ export default function Controls({
   processing: boolean;
   error: string | null;
 }): React.ReactNode {
-  const onDrop = useCallback(
-    ([file]: File[]) => {
-      setImage(URL.createObjectURL(file));
-      if (image) {
-        URL.revokeObjectURL(image);
-      }
-    },
-    [image, setImage],
-  );
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      "image/*": [],
-    },
-    multiple: false,
-  });
-  const uploadText = isDragActive ? "Drop here to Upload" : "Upload";
-
   const button = processing ? (
     <button
       type="button"
       disabled
-      className="w-full p-2 text-white rounded bg-gray-400 text-gray-200 cursor-not-allowed font-bold animate-pulse"
+      className="w-full animate-pulse cursor-not-allowed rounded bg-gray-400 p-2 font-bold text-gray-200"
     >
-      Processing...
+      Processing…
     </button>
   ) : playing === null ? (
     <button
       type="button"
       disabled={song === null}
       onClick={() => setPlaying(0)}
-      className="w-full p-2 text-white rounded bg-gradient-to-r from-rose-500 from-10% via-emerald-500 via-50% to-indigo-500 to-90% hover:from-rose-600 hover:via-emerald-600 hover:to-indigo-600 disabled:bg-gray-400 disabled:text-gray-200 disabled:cursor-not-allowed disabled:bg-none font-bold"
+      className="w-full rounded bg-gradient-to-r from-rose-500 from-10% via-emerald-500 via-50% to-indigo-500 to-90% p-2 font-bold text-white hover:from-rose-600 hover:via-emerald-600 hover:to-indigo-600 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:bg-none disabled:text-gray-200 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
     >
       Play
     </button>
@@ -107,14 +86,14 @@ export default function Controls({
     <button
       type="button"
       onClick={() => setPlaying(null)}
-      className="w-full p-2 bg-red-500 hover:bg-red-600 text-white rounded font-bold"
+      className="w-full rounded bg-red-500 p-2 font-bold text-white hover:bg-red-600"
     >
       Stop
     </button>
   );
   const err = error ? (
     <div
-      className="w-full p-2 bg-red-100 border border-red-400 text-red-700 rounded"
+      className="w-full rounded border border-red-400 bg-red-100 p-2 text-red-700 dark:border-red-500/50 dark:bg-red-950/50 dark:text-red-300"
       role="alert"
     >
       {error}
@@ -122,16 +101,16 @@ export default function Controls({
   ) : null;
 
   return (
-    <div className="flex flex-col gap-y-2 shrink-0 md:w-sm">
-      <div {...getRootProps()} className="w-full">
-        <input {...getInputProps()} />
+    <div className="order-2 flex shrink-0 flex-col gap-y-2 md:order-1 md:w-sm">
+      {hasImage ? (
         <button
           type="button"
-          className="p-2 text-white w-full rounded bg-gradient-to-r from-rose-500 from-10% via-emerald-500 via-50% to-indigo-500 to-90% hover:from-rose-600 hover:via-emerald-600 hover:to-indigo-600 font-bold"
+          onClick={onUpload}
+          className="w-full rounded bg-gradient-to-r from-rose-500 from-10% via-emerald-500 via-50% to-indigo-500 to-90% p-2 font-bold text-white hover:from-rose-600 hover:via-emerald-600 hover:to-indigo-600"
         >
-          {uploadText}
+          Replace image
         </button>
-      </div>
+      ) : null}
       <NumericSelector
         title="Duration (seconds)"
         min="1"
@@ -156,12 +135,6 @@ export default function Controls({
         set={setBpm}
       />
       <TypedSelector
-        title="Region Selection"
-        value={region}
-        set={setRegion}
-        values={[["grid", "Grid"]]}
-      />
-      <TypedSelector
         title="Color Selection"
         value={colorChoice}
         set={setColorChoice}
@@ -179,18 +152,6 @@ export default function Controls({
         value={minStd}
         set={setMinStd}
       />
-      <TypedSelector
-        title="Note Conversion"
-        value={noteMethod}
-        set={setNoteMethod}
-        values={[["hslc", "HSL Cone"]]}
-      />
-      <TypedSelector
-        title="Refine Method"
-        value={refineMethod}
-        set={setRefineMethod}
-        values={[["trim", "Trim"]]}
-      />
       <NumericSelector
         title="Minimum Note Proportion"
         min="0"
@@ -205,6 +166,24 @@ export default function Controls({
         max="12"
         value={maxNotes}
         set={setMaxNotes}
+      />
+      <TypedSelector
+        title="Region Selection"
+        value={region}
+        set={setRegion}
+        values={[["grid", "Grid"]]}
+      />
+      <TypedSelector
+        title="Note Conversion"
+        value={noteMethod}
+        set={setNoteMethod}
+        values={[["hslc", "HSL Cone"]]}
+      />
+      <TypedSelector
+        title="Refine Method"
+        value={refineMethod}
+        set={setRefineMethod}
+        values={[["trim", "Trim"]]}
       />
       {err}
       <div className="grow" />

@@ -1,9 +1,8 @@
 "use client";
 
 import { addBasePath } from "next/dist/client/add-base-path";
-import { connection } from "next/server";
 import { useEffect, useState } from "react";
-import { loaded, Sampler } from "tone";
+import { Sampler } from "tone";
 import { orderedNotes } from "../src/notes";
 import type { Chord } from "../src/worker-interface";
 
@@ -20,23 +19,22 @@ export default function Player({
 }): React.ReactNode {
   const [sampler, setSampler] = useState<Sampler | null>(null);
   useEffect(() => {
-    // this prevents this from happening during pre-render since the prerender can't render audio
-    connection()
-      .then(loaded)
-      .then(() => {
-        const urls: Record<string, string> = {};
-        for (const note of orderedNotes) {
-          for (let octave = 1; octave < 8; ++octave) {
-            urls[`${note}${octave}`] = `${note}${octave}.mp3`;
-          }
-        }
-        setSampler(
-          new Sampler({
-            urls,
-            baseUrl: addBasePath("/Piano.mf."),
-          }).toDestination(),
-        );
-      });
+    // effects only run in the browser, so the audio sampler is never
+    // constructed during the static prerender
+    const urls: Record<string, string> = {};
+    for (const note of orderedNotes) {
+      for (let octave = 1; octave < 8; ++octave) {
+        urls[`${note}${octave}`] = `${note}${octave}.mp3`;
+      }
+    }
+    const next = new Sampler({
+      urls,
+      baseUrl: addBasePath("/Piano.mf."),
+    }).toDestination();
+    setSampler(next);
+    return () => {
+      next.dispose();
+    };
   }, []);
 
   useEffect(() => {
