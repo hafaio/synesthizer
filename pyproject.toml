@@ -1,7 +1,7 @@
 [project]
 name = "synesthizer"
 version = "0.1.0"
-description = "Add your description here"
+description = "A synesthetic synthesizer that converts images into piano compositions"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
