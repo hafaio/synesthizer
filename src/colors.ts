@@ -86,13 +86,13 @@ export function hslc2rgb(hsl: HSLC): RGB {
   let res: RGB;
   if (hp < 1) {
     res = [c + m, ex + m, m];
-  } else if (h < 2) {
+  } else if (hp < 2) {
     res = [ex + m, c + m, m];
-  } else if (h < 3) {
+  } else if (hp < 3) {
     res = [m, c + m, ex + m];
-  } else if (h < 4) {
+  } else if (hp < 4) {
     res = [m, ex + m, c + m];
-  } else if (h < 5) {
+  } else if (hp < 5) {
     res = [ex + m, m, c + m];
   } else {
     res = [c + m, m, ex + m];
