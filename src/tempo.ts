@@ -15,10 +15,10 @@ export function meanKeyTempo(
   const [{ colors }] = single(img);
   const [[color]] = hslcMean(colors);
   const [note, octave] = hslc2note(color);
-  const noteNum = orderedNotes.indexOf(note);
-  const keyNum = noteNum + octave * 12; // [0, 72)
-  // place it from low to high on log-scale
-  return Math.round(
-    Math.exp(((Math.log(high) - Math.log(low)) / 72) * keyNum + Math.log(low)),
-  );
+  const noteNum = orderedNotes.indexOf(note); // [0, 11]
+  const keyNum = noteNum + octave * 12; // [12, 95] since octave is [1, 7]
+  // place it from low to high on a log-scale across the actual key range
+  const frac = (keyNum - 12) / (95 - 12);
+  const bpm = Math.exp((Math.log(high) - Math.log(low)) * frac + Math.log(low));
+  return Math.round(Math.min(high, Math.max(low, bpm)));
 }
