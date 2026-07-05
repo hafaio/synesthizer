@@ -2,18 +2,24 @@ import { type RGB, rgb2hsl } from "./colors";
 
 export type NoteConversion = "hslc";
 
+const A = "A".charCodeAt(0);
+
+/** step a note letter `by` positions around the A–G cycle, preserving its case */
+function shiftLetter(letter: string, by: number): string {
+  const upper = letter.toUpperCase();
+  const offset = (upper.charCodeAt(0) - A + by + 7) % 7;
+  const shifted = String.fromCharCode(A + offset);
+  return letter === upper ? shifted : shifted.toLowerCase();
+}
+
 /** convert a string with sharps in it to flats */
 export function sharp2flat(sharp: string): string {
-  return sharp.replaceAll(/[ACDFG]#/gi, (mat) =>
-    String.fromCharCode(mat.charCodeAt(0) + 1, 98),
-  );
+  return sharp.replaceAll(/[ACDFG]#/gi, (mat) => `${shiftLetter(mat[0], 1)}b`);
 }
 
 /** convert a string with flats in it to sharps */
 export function flat2sharp(flat: string): string {
-  return flat.replaceAll(/[ABDEG]b/gi, (mat) =>
-    String.fromCharCode(mat.charCodeAt(0) - 1, 35),
-  );
+  return flat.replaceAll(/[ABDEG]b/gi, (mat) => `${shiftLetter(mat[0], -1)}#`);
 }
 
 export const orderedNotes = [
