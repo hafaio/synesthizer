@@ -30,9 +30,11 @@ export default function ImageRendering({
     points = song.map((chord, i) => {
       const points = chord.poly.map(([x, y]) => `${x},${y}`).join(" ");
       // TODO better name with better undserstanding of chords
+      // trimming can leave a chord with no notes; render a rest instead
       const [first] = chord.notes;
-      const rend = first.replaceAll("b", "♭").replaceAll("#", "♯");
-      const name = chord.notes.length > 1 ? `${rend}♪` : rend;
+      const rend = first?.replaceAll("b", "♭").replaceAll("#", "♯");
+      const name =
+        rend === undefined ? "𝄽" : chord.notes.length > 1 ? `${rend}♪` : rend;
       const [, , lightness] = rgb2hsl(hex2rgb(chord.color));
       const noteColor = lightness < 0.5 ? "white" : "black";
       const active = i === playing;
