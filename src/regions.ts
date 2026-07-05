@@ -70,9 +70,16 @@ export function* single(img: ImageData): Generator<Region> {
 /** an ordered set of apprximately square patches */
 export function* orderedGrid(img: ImageData, notes: number): Generator<Region> {
   const scale = Math.sqrt(notes / (img.width * img.height));
-  const nwidth = Math.round(img.width * scale);
+  // clamp to [1, size]: at most one region per pixel, never zero regions
+  const nwidth = Math.min(
+    img.width,
+    Math.max(1, Math.round(img.width * scale)),
+  );
   const swidth = Math.ceil(img.width / nwidth);
-  const nheight = Math.round(img.height * scale);
+  const nheight = Math.min(
+    img.height,
+    Math.max(1, Math.round(img.height * scale)),
+  );
   const sheight = Math.ceil(img.height / nheight);
 
   const winit = Math.floor((img.width - swidth * nwidth) / 2);
