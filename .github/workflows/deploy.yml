@@ -4,6 +4,7 @@ name: deploy
 on:
   workflow_dispatch:
 
+# id-token lets deploy-pages publish via OIDC (GitHub Pages trusted publishing)
 permissions:
   contents: read
   pages: write
@@ -14,12 +15,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Re-run the full build/test suite as a deploy gate.
-  gate:
-    uses: ./.github/workflows/build.yml
-
+  # Build the static site and upload it as a Pages artifact.
   build:
-    needs: gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,6 +25,8 @@ jobs:
           lfs: true
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
+      # lint + test gate the deploy before we spend time building the artifact
+      - run: bun lint
       - uses: actions/configure-pages@v5
         with:
           # Injects basePath and disables server-side image optimization.
@@ -44,6 +43,7 @@ jobs:
         with:
           path: ./out
 
+  # Publish the already-built artifact to GitHub Pages.
   deploy:
     needs: build
     runs-on: ubuntu-latest
