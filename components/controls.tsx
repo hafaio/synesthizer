@@ -81,7 +81,7 @@ export default function Controls({
   ) : playing === null ? (
     <button
       type="button"
-      disabled={song === null}
+      disabled={song === null || song.length === 0}
       onClick={() => setPlaying(0)}
       className="w-full rounded bg-gradient-to-r from-rose-500 from-10% via-emerald-500 via-50% to-indigo-500 to-90% p-2 font-bold text-white hover:from-rose-600 hover:via-emerald-600 hover:to-indigo-600 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:bg-none disabled:text-gray-200 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
     >
