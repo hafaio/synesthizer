@@ -113,7 +113,8 @@ function kmeansNative(
       for (let c = 0; c < nclusters; ++c) {
         let sqDist = 0;
         for (let j = 0; j < dim; ++j) {
-          sqDist += data[d * dim + j] * clusters[c * dim + j];
+          const diff = data[d * dim + j] - clusters[c * dim + j];
+          sqDist += diff * diff;
         }
         if (sqDist < minDist) {
           minDist = sqDist;
