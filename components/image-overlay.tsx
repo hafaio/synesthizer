@@ -3,8 +3,8 @@ import type { Chord } from "../src/worker-interface";
 
 function polyArea(points: [number, number][]): number {
   let area = 0;
-  for (const [i, [xe, ye]] of points.slice(1).entries()) {
-    const [xs, ys] = points[i];
+  for (const [i, [xs, ys]] of points.entries()) {
+    const [xe, ye] = points[(i + 1) % points.length];
     area += xs * ye - xe * ys;
   }
   return Math.abs(area) / 2;
