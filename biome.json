@@ -6,7 +6,15 @@
     "useIgnoreFile": false
   },
   "files": {
-    "includes": ["app/*.tsx", "app/*.css", "components/*.tsx", "src/*.ts"],
+    "includes": [
+      "app/**/*.tsx",
+      "app/**/*.css",
+      "components/**/*.tsx",
+      "src/**/*.ts",
+      "*.ts",
+      "*.mjs",
+      "!next-env.d.ts"
+    ],
     "ignoreUnknown": false
   },
   "formatter": {
