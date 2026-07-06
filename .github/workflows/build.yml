@@ -34,6 +34,6 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('bun.lock') }}-
       - run: bun export
       - if: inputs.upload-pages
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./out
