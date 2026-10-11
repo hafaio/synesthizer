@@ -5,7 +5,7 @@ import { self } from "$app/service-worker";
 const shell = `app-${version}`;
 // the piano sounds rarely change, so their cache outlives app versions; the
 // number goes up whenever the sound files are regenerated
-const sounds = "sounds-2";
+const sounds = "sounds-3";
 
 function absolute(path: string): string {
   return new URL(path.replace(/^\//, ""), self.registration.scope).href;
