@@ -3,6 +3,7 @@
   import type { Snippet } from "svelte";
   import "@fontsource-variable/hanken-grotesk";
   import "../app.css";
+  import UpdatePrompt from "../lib/components/UpdatePrompt.svelte";
 
   const { children }: { children: Snippet } = $props();
 </script>
@@ -22,3 +23,4 @@
   themeColors={{ light: "#f4f4f2", dark: "#17181b" }}
 />
 {@render children()}
+<UpdatePrompt />

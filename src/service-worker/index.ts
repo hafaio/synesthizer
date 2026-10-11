@@ -69,3 +69,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(respond(event.request));
   }
 });
+
+// the page sends this when the reload button on its update prompt is pressed
+self.addEventListener("message", (event) => {
+  if (event.data === "activate") {
+    void self.skipWaiting();
+  }
+});
