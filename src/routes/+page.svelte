@@ -16,7 +16,7 @@
   import type { ColorChoice } from "../lib/extraction";
   import type { FitOptions } from "../lib/fit";
   import { convert } from "../lib/image";
-  import type { NoteConversion } from "../lib/notes";
+  import { type NoteConversion, spell } from "../lib/notes";
   import type { OrderMethod } from "../lib/order";
   import type { RefineMethod } from "../lib/refine";
   import type { RegionMethod } from "../lib/regions";
@@ -160,6 +160,14 @@
     } = defaults);
     fit = { ...defaults.fit };
   }
+
+  // the notes sounding now, as read out by a screen reader
+  const announced = $derived.by(() => {
+    const chord = song?.[playing ?? -1];
+    return chord
+      ? chord.notes.map((name) => spell(name, chord.sharps)).join(" ")
+      : "";
+  });
 
   // moves the cursor and pauses there; play carries on from it
   function seek(index: number): void {
@@ -449,7 +457,7 @@
     </aside>
   </Dropzone>
   <p class="sr-only" aria-live="polite">
-    {processing ? "Processing…" : (song?.[playing ?? -1]?.notes.join(" ") ?? "")}
+    {processing ? "Processing…" : announced}
   </p>
   <Player
     {song}
